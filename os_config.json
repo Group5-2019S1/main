@@ -1,0 +1,13 @@
+{
+ "description" : "A port of Debian with desktop and recommended applications",
+ "flavour" : "Raspbian Full",
+ "imagefolder" : "/mnt/os/Raspbian_Full",
+ "keyboard" : "gb",
+ "language" : "en",
+ "partitions" : [
+"/dev/mmcblk0p6",
+"/dev/mmcblk0p7"
+ ],
+ "release_date" : "2019-07-10",
+ "videomode" : 0
+}
