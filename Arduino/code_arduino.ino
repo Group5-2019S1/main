@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define STACK_SIZE 200
+#define STACK_SIZE 1000
 
 // Message buffer
 char msgbuffer[4000];
@@ -16,8 +16,6 @@ int handshake = 0;
 int val = 0;
 int ack = 0;
 
-
-//char array of 4 bytes as data from 1 axis of IMU is 4 bytes
 typedef union {
    float f;
    char str[4];
@@ -25,15 +23,16 @@ typedef union {
 
 void setup() {
   // put your setup code here, to run once:
-  Wire.begin();
-  Serial.begin(9600);
-  Serial3.begin(115200);
+  //Wire.begin();
+  Serial.begin(115200);
+  Serial2.begin(115200);
   //pinMode(A1, OUTPUT);
   //pinMode(A2, OUTPUT);
   //pinMode(A3, OUTPUT);
   initializingHandshake();
+  //xTaskCreate(testing, "handshake", STACK_SIZE, NULL, 2, NULL);
   xTaskCreate(mainTask, "mainTask", STACK_SIZE, NULL, 1, NULL);
-  //xTaskCreate(testing, "testing", STACK_SIZE, NULL, 1, NULL);
+  //xTaskCreate(testing, "sendDate", STACK_SIZE, NULL, 2, NULL);
   vTaskStartScheduler();
 }
 
@@ -50,33 +49,30 @@ void setup() {
 
 void initializingHandshake(){
   
-  Serial.println("Initializing handshake");
+  //Serial.println("Initializing handshake");
 
   while(handshake < 2){
     while(handshake == 0){
-      if(Serial3.available()){
-        val = Serial3.read();
+      if(Serial2.available()){
+        val = Serial2.read();
         //Serial.println(val);
         if(val == 49){
           Serial.println("Request received. Sending ACK to RPi");
-          Serial3.write("1");
+          Serial2.write("1");
           handshake = 1;
           val = 0;
         }
       }
     }
     while(handshake == 1){
-      if(Serial3.available()){
-        Serial3.write("1");
-        val = Serial3.read();
-        //Serial.println(val);
+      if(Serial2.available()){
+        val = Serial2.read();
         if(val == 50){
           Serial.println("Received ACK from RPi");
           handshake = 2;
         }
       }
       else{
-        Serial3.write("1");
         Serial.println("Yet to receive ACK from RPi");
       }
     }
@@ -88,10 +84,35 @@ void initializingHandshake(){
 
 }
 
-void mainTask(void *p) {
+void readData(Data dataBuffer[]){
 
-  TickType_t xLastWakeTime;
-  xLastWakeTime = xTaskGetTickCount();
+  Data data;
+
+  // Simulate data reading from IMU sensors
+  for(int i = 0; i < 27 ; i++){
+    data.f = 1.23;
+    dataBuffer[i] = data;
+  }
+  Serial.print("readDate mode");
+  // '#' represents start of data packet
+  Serial2.write("#");
+  
+  for(int j = 0; j < 27; j++){
+    Serial2.write(dataBuffer[j].str[3]);
+    Serial2.write(dataBuffer[j].str[2]);
+    Serial2.write(dataBuffer[j].str[1]);
+    Serial2.write(dataBuffer[j].str[0]);
+
+  }
+  
+  Serial2.write("0");  // Checksum
+  Serial2.write("\n");  // End of line
+}
+
+void mainTask(void *p) {
+//
+//  TickType_t xLastWakeTime;
+//  xLastWakeTime = xTaskGetTickCount();
   
   Serial.println("Data sending phase initiated");
   
@@ -99,54 +120,27 @@ void mainTask(void *p) {
   int ACK;
   int count = 5;
 
+  /* 
+   A float is 4 bytes in union data structutre
+   4 ( gyro(x,y,z) + acc(x,y,z) ) == 96 bytes
+   '#'(start) + Current(4B) + Voltage(4B) + Power(4B) + Checksum = 14 bytes 
+   Therefore need array size of 110 bytes for 1 packet of sensor reading
+  */
+  Data dataBuffer[110];
 
-/*   Data data;
-
-  data.f = 1.23;
-  Serial3.write("#");
-  Serial3.write(data.str[3]);
-  Serial3.write(data.str[2]);
-  Serial3.write(data.str[1]);
-  Serial3.write(data.str[0]);
-  Serial3.write("\n");
- */
- 
-  while(1){
-    if(flag==1);
-  }
+//  while(1){
+//    if(flag==1);
+//  }
   
   while(1){
+    // Flag to check if NACK received
     flag = 0;
-    // An int is 2 bytes
-    // 4 * ( gyro(x,y,z) + acc(x,y,z) ) == 48 bytes
-    // Therefore need array size of 24 for 1 full array of sensor reading
-    // This is without power readings
-    int sensorReadings [24];
-    //Empty msg buffer
-    strcpy(msgbuffer, "");
-    strcat(msgbuffer, "#");
-	
-	//Testing sending of 109 bytes to simulate actual data packet
-    strcat(msgbuffer, "1234567890");
-    strcat(msgbuffer, "1234567890");
-    strcat(msgbuffer, "1234567890");
-    strcat(msgbuffer, "1234567890");
-    strcat(msgbuffer, "1234567890");
-    strcat(msgbuffer, "1234567890");
-    strcat(msgbuffer, "1234567890");
-    strcat(msgbuffer, "1234567890");
-    strcat(msgbuffer, "1234567890");
-    strcat(msgbuffer, "1234567890");
-    strcat(msgbuffer, "123456789\n");
-    Serial.println(msgbuffer);
-    int ret = Serial3.write(msgbuffer);
-    Serial.println(ret);
-
-
-	//Error correction
+    
+    readData(dataBuffer);
+    
     while( flag == 0 ){  
-      if (Serial3.available()){
-        ACK = Serial3.read();
+      if (Serial2.available()){
+        ACK = Serial2.read();
         if( ACK == 78 ){
           Serial.println("NACK received. Resend");
           if(count != 0){
@@ -154,7 +148,6 @@ void mainTask(void *p) {
             Serial.print("Resending data.");
             Serial.print(count);
             Serial.println(" time(s) left");
-            Serial3.write(msgbuffer);
           } else {
             Serial.println("Data packet dropped. Proceeding to sending next data packet.");
             flag = 1;
@@ -168,7 +161,6 @@ void mainTask(void *p) {
         
       }
     }
-    //calculate checksum and append in msgbuffer
   }
   
 }
@@ -177,8 +169,8 @@ void loop() {
   // put your main code here, to run repeatedly:
   //Serial.println("HELLOWORLD");
 //  int incomingByte;
-//  if(Serial3.available() > 0) {
-//    incomingByte = Serial3.read();
+//  if(Serial2.available() > 0) {
+//    incomingByte = Serial2.read();
 //    Serial.println(incomingByte);
 //  }
 }
