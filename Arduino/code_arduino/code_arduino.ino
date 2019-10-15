@@ -1,6 +1,6 @@
 #include <Arduino_FreeRTOS.h>
-#include <stdlib.h>
 #include <task.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "I2Cdev.h"
@@ -18,7 +18,7 @@
 #define RS 0.1
 #define VOLTAGE_REF 5
 
-#define STACK_SIZE 300
+#define STACK_SIZE 3000
 
 MPU6050 mpu6050[IMU_COUNT_PER_MODEL] = { MPU6050(0x68), MPU6050(0x69) };
 LSM6DS3 lsm6ds3[IMU_COUNT_PER_MODEL] = { LSM6DS3(I2C_MODE, 0x6B), LSM6DS3(I2C_MODE, 0x6A) };
@@ -295,8 +295,8 @@ void readPowerData(Data_float powerBuffer[]){
 
   //calculate energy
   currTime = millis();
-  timeVal = ((currTime - prevTime) * 10 ^ (-3)) / 3600;
-  energyVal = energyVal + (power * timeVal);
+  timeVal = (currTime - prevTime) / 3600000;
+  energyVal = power * timeVal;
   prevTime = currTime;
   Serial.println("Reading PoweR");
   
@@ -358,7 +358,7 @@ void mainTask(void *p) {
   
   int flag = 0;
   int ACK;
-  int count = 5;
+  int count = 3;
   
   while(1){
     // Flag to check if NACK received
@@ -383,10 +383,10 @@ void mainTask(void *p) {
     
     for (int j=0; j < 65; j++) {
       Serial2.write(msgBuffer[j]);
-      Serial.print(msgBuffer[j]);
+      //Serial.print(msgBuffer[j]);
     }
     
-    Serial2.write("\n");
+    //Serial2.write('\n');
     Serial.println();
     
     while( flag == 0 ){  
@@ -399,6 +399,10 @@ void mainTask(void *p) {
             Serial.print("Resending data.");
             Serial.print(count);
             Serial.println(" time(s) left");
+            for (int j=0; j < 65; j++) {
+              Serial2.write(msgBuffer[j]);
+              //Serial.print(msgBuffer[j]);
+            }
           } else {
             Serial.println("Data packet dropped. Proceeding to sending next data packet.");
             flag = 1;
@@ -418,4 +422,5 @@ void mainTask(void *p) {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  //mainTask();
 }
