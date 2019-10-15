@@ -23,18 +23,18 @@
 MPU6050 mpu6050[IMU_COUNT_PER_MODEL] = { MPU6050(0x68), MPU6050(0x69) };
 LSM6DS3 lsm6ds3[IMU_COUNT_PER_MODEL] = { LSM6DS3(I2C_MODE, 0x6B), LSM6DS3(I2C_MODE, 0x6A) };
 
-// Sensor offsets obtained from calibration 
-int16_t mpu6050AccOffsets[IMU_MODEL_COUNT][AXIS_COUNT] 
-  = { { -2170, -284, 1178 }, 
+// Sensor offsets obtained from calibration
+int16_t mpu6050AccOffsets[IMU_MODEL_COUNT][AXIS_COUNT]
+  = { { -2170, -284, 1178 },
       { -1940, 1550, 1800 } };
-int16_t mpu6050GyroOffsets[IMU_MODEL_COUNT][AXIS_COUNT] 
+int16_t mpu6050GyroOffsets[IMU_MODEL_COUNT][AXIS_COUNT]
   = { { 69, -51, -1 }, 
       { 48, -37, 5 } };
-int16_t lsm6ds3AccOffsets[IMU_MODEL_COUNT][AXIS_COUNT] 
-  = { { 302, -183, -81 }, 
+int16_t lsm6ds3AccOffsets[IMU_MODEL_COUNT][AXIS_COUNT]
+  = { { 302, -183, -81 },
       { 410, -308, 22 } };
-int16_t lsm6ds3GyroOffsets[IMU_MODEL_COUNT][AXIS_COUNT] 
-  = { { -20, -77, -4 }, 
+int16_t lsm6ds3GyroOffsets[IMU_MODEL_COUNT][AXIS_COUNT]
+  = { { -20, -77, -4 },
       { -5, -225, -77 } };
 
 /*********************************
@@ -87,7 +87,7 @@ void displayImuData(Data_int[]);
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
-  Serial3.begin(115200);
+  Serial2.begin(115200);
   Wire.begin();
   Wire.setClock(400000);
   pinMode(LED_PIN, OUTPUT);  
@@ -118,20 +118,20 @@ void initializingHandshake(){
 
   while(handshake < 2){
     while(handshake == 0){
-      if(Serial3.available()){
-        val = Serial3.read();
+      if(Serial2.available()){
+        val = Serial2.read();
         //Serial.println(val);
         if(val == 49){
           Serial.println("Request received. Sending ACK to RPi");
-          Serial3.write("1");
+          Serial2.write("1");
           handshake = 1;
           val = 0;
         }
       }
     }
     while(handshake == 1){
-      if(Serial3.available()){
-        val = Serial3.read();
+      if(Serial2.available()){
+        val = Serial2.read();
         if(val == 50){
           Serial.println("Received ACK from RPi");
           handshake = 2;
@@ -379,19 +379,19 @@ void mainTask(void *p) {
     
     convertData(dataBuffer, powerBuffer);
 
-    Serial3.write("#");
+    Serial2.write("#");
     
     for (int j=0; j < 65; j++) {
-      Serial3.write(msgBuffer[j]);
+      Serial2.write(msgBuffer[j]);
       Serial.print(msgBuffer[j]);
     }
     
-    Serial3.write("\n");
+    Serial2.write("\n");
     Serial.println();
     
     while( flag == 0 ){  
-      if (Serial3.available()){
-        ACK = Serial3.read();
+      if (Serial2.available()){
+        ACK = Serial2.read();
         if( ACK == 78 ){
           Serial.println("NACK received. Resend");
           if(count != 0){
