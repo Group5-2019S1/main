@@ -10,6 +10,7 @@ from sklearn.metrics import *
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
 
 
 def processData():
@@ -166,7 +167,7 @@ def main():
     # split into 60-20-20 train-validate-test
     # X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=1)
 
-    rf = RandomForestClassifier(n_estimators=100, random_state=1)
+    rf = RandomForestClassifier()
     print('\n')
     print('Using the Random Forest Classifier: \n')
     accuracy, precision, recall = KFoldCV(X, y, rf)
@@ -185,6 +186,16 @@ def main():
     print('The recall using KFold cross validation is ' + str(recall) + '.')
     svm.fit(X, y)
     generateConfusionMatrix(y, svm.predict(X))
+
+    knn = KNeighborsClassifier(n_neighbors=133)
+    print('\n')
+    print('Using KNN: \n')
+    accuracy, precision, recall = KFoldCV(X, y, knn)
+    print('The accuracy using KFold cross validation is ' + str(accuracy) + '.')
+    print('The precision using KFold cross validation is ' + str(precision) + '.')
+    print('The recall using KFold cross validation is ' + str(recall) + '.')
+    knn.fit(X, y)
+    generateConfusionMatrix(y, knn.predict(X))
 
 
 main()
