@@ -13,6 +13,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
 from statistics import mode
 
@@ -147,6 +148,7 @@ def main():
     rf.fit(X, y)
     print('Using the Random Forest Classifier: \n')
     print("The accuracy using KFold cross validation is {}".format(accuracy))
+    print(classification_report(y, y_predicted, labels=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]))
 
     mlp = MLPClassifier(hidden_layer_sizes=(100, 100, 10), early_stopping=True, max_iter=50, shuffle=True,
                         batch_size=100, activation='tanh', verbose=True, tol=0.01)
@@ -156,5 +158,5 @@ def main():
     mlp.fit(X, y)
     print('Using the Multi Layer Perceptron: \n')
     print("The accuracy using KFold cross validation is {}".format(accuracy))
-
+    print(classification_report(y, y_predicted, labels=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]))
 main()
