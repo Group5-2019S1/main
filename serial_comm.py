@@ -6,11 +6,11 @@ import struct
 import time
 
 def compute_checksum(databytes, checksum):
-    print("Length of data is {0} bytes".format(len(databytes)))
+#    print("Length of data is {0} bytes".format(len(databytes)))
     check = 0
     for i in range(len(databytes)):
         check ^= databytes[i]
-    print(check, checksum)
+#    print(check, checksum)
     if check == checksum:
         return True
     else:
@@ -65,7 +65,7 @@ label = input()
 
 start = time.time()
 prevcount = count = 0
-timer15 = start + 15  # 15 seconds
+timer15 = start + 5  # 15 seconds
 # 15 seconds countdown before start
 while True:
     if(time.time() > prevcount):
@@ -92,7 +92,7 @@ while(handshake == 2):
     print("Receiving data...")
     bytedata=port.read(66)
     bytedata = bytedata[bytedata.find(b'#')+1:]
-    print(bytedata)
+    #print(bytedata)
 
     #seq = bytedata.decode('ascii').strip()
     if len(bytedata) == 65:
@@ -100,7 +100,7 @@ while(handshake == 2):
             port.write(ACK)
 
             data_dict = extract_data(bytedata[:-1])
-            print(data_dict)
+            #print(data_dict)
             readings.append(data_dict)
         else:
             port.write(NACK)
