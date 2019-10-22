@@ -115,8 +115,12 @@ class Client(threading.Thread):
             varname =["handmotor", "bunny", "tapshoulders", "rocket", "cowboy"]
             prediction, confidence = predict(sensor_readings[100:150], classifier)
             print(prediction, confidence)
-            if (confidence > 0.95):
-                prediction = varname[prediction-1]
+
+            if (prediction == 0)
+                sensor_readings = [];
+
+            elif (confidence > 0.95):
+                prediction = varname[prediction - 1]
                 vol, cur, power, cumPow = compute_circuit_info(circuit_readings)
                 raw_message = "#{0}|{1}|{2}|{3}|{4}".format(prediction, vol, cur, power, cumPow)
                 print(raw_message)
