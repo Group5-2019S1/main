@@ -10,12 +10,12 @@ from sklearn.externals import joblib
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from features import extraction
-
+import numpy as np
 
 def predict(readings, classifier):
     features = extraction(readings)
     dancemove = classifier.predict(features)
-    prediction, confidence = dancemove[0], np.amax(classifier(features))
+    prediction, confidence = dancemove[0], np.amax(classifier.predict_proba(features))
     return prediction, confidence
 
 
@@ -30,11 +30,11 @@ def compute_circuit_info(readings):
     return round(vol, 2), round(cur, 2), round(power, 2), round(cumPow, 2)
 
 def compute_checksum(databytes, checksum):
-    print("Length of data is {0} bytes".format(len(databytes)))
+    #print("Length of data is {0} bytes".format(len(databytes)))
     check = 0
     for i in range(len(databytes)):
         check ^= databytes[i]
-    print(check, checksum)
+    #print(check, checksum)
     if check == checksum:
         return True
     else:
@@ -93,17 +93,17 @@ class Client(threading.Thread):
             count = 0
             while (handshake == 2) and count < frame:
                 count += 1
-                print("Receiving data...")
+                #print("Receiving data...")
                 bytedata = port.read(66)
                 bytedata = bytedata[bytedata.find(b'#') + 1:]
-                print(bytedata)
+                #print(bytedata)
 
                 if len(bytedata) == 65:
                     if compute_checksum(bytedata[:-1], bytedata[-1]):
                         port.write(ACK)
                         sensor_data, circuit_data = extract_data(bytedata[:-1])
-                        print(sensor_data)
-                        print(circuit_data)
+                        #print(sensor_data)
+                        #print(circuit_data)
                         sensor_readings.append(sensor_data)
                         circuit_readings.append(circuit_data)
                     else:
@@ -113,7 +113,8 @@ class Client(threading.Thread):
 
             print('Predicting the action: ')
             varname =["handmotor", "bunny", "tapshoulders", "rocket", "cowboy"]
-            prediction, confidence = predict(sensor_readings, classifier)
+            prediction, confidence = predict(sensor_readings[100:150], classifier)
+            print(prediction, confidence)
             if (confidence > 0.95):
                 prediction = varname[prediction-1]
                 vol, cur, power, cumPow = compute_circuit_info(circuit_readings)
@@ -129,11 +130,11 @@ class Client(threading.Thread):
 
 
 PORT = 6788
-HOST = "192.168.43.127"
+HOST = "192.168.43.36"
 secret_key = 'secretkeysixteen'
 ACK = b'A'
 NACK = b'N'
 
-frame = 50
+frame = 150
 my_client = Client(HOST, PORT)
 my_client.start()

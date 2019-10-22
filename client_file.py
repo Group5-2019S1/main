@@ -20,6 +20,7 @@ def predict(readings, clf):
     # clf = joblib.load('mlp.joblib')
 
     X_data = readings
+    X_data = np.array(X_data)
     segmented_data = []
 
     for i in range(int(len(X_data) / overlap)):
@@ -142,14 +143,14 @@ class Client(threading.Thread):
                 print("Receiving data...")
                 bytedata = port.read(66)
                 bytedata = bytedata[bytedata.find(b'#') + 1:]
-                print(bytedata)
+                #print(bytedata)
 
                 if len(bytedata) == 65:
                     if compute_checksum(bytedata[:-1], bytedata[-1]):
                         port.write(ACK)
                         sensor_data, circuit_data = extract_data(bytedata[:-1])
-                        print(sensor_data)
-                        print(circuit_data)
+                        #print(sensor_data)
+                        #print(circuit_data)
                         sensor_readings.append(sensor_data)
                         circuit_readings.append(circuit_data)
                     else:
@@ -172,13 +173,12 @@ class Client(threading.Thread):
 
 
 PORT = 6788
-HOST = "172.31.27.114"
+HOST = "192.168.43.36"
 secret_key = 'secretkeysixteen'
 ACK = b'A'
 NACK = b'N'
 
-print("Enter frame size: ")
-frame = input()
+frame = 50
 my_client = Client(HOST, PORT)
 my_client.start()
 
