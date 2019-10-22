@@ -7,9 +7,63 @@ import serial
 from statistics import mean
 import struct
 
+import joblib
+import numpy as np
+from scipy.fftpack import fft
+from sklearn.preprocessing import StandardScaler
 
-def predict(readings):
-    return "logout"
+def predict(readings, clf):
+    window_size = 50
+    overlap = 25
+    features = []
+    scaler = StandardScaler()
+    # clf = joblib.load('mlp.joblib')
+
+    X_data = readings
+    segmented_data = []
+
+    for i in range(int(len(X_data) / overlap)):
+        segmented_data.append(X_data[i * overlap:((i * overlap) + window_size), 0:])
+
+    for i in range(len(segmented_data)):
+        temp_row = []
+        for j in range(0, 24):
+            temp = segmented_data[i][0:, j]
+            mean = np.mean(temp)
+            median = np.median(temp)
+            maximum = np.amax(temp)
+            minimum = np.amin(temp)
+            rms = np.sqrt(np.mean(temp ** 2))
+            std = np.std(temp)
+            q75, q25 = np.percentile(temp, [75, 25])
+            iqr = q75 - q25
+            temp_row.append(mean)
+            temp_row.append(median)
+            temp_row.append(maximum)
+            temp_row.append(std)
+            temp_row.append(iqr)
+            temp_row.append(minimum)
+            temp_row.append(rms)
+
+            #   Frequency Domain Feature - Power Spectral Density
+            # Freq domain features = Power spectral density, summation |ck|^2
+            fourier_temp = fft(temp)
+            fourier = np.abs(fourier_temp) ** 2
+            value = 0
+            for x in range(len(fourier)):
+                value = value + (fourier[x] * fourier[x])
+            value = value / len(fourier)
+            temp_row.append(value)
+
+        # features are added to the features array (as a single dimension).
+        features.append(temp_row)
+
+    # Feature Scaling
+    scaler.fit(features)
+    features = scaler.transform(features)
+
+    prediction = clf.predict(features)
+    return prediction
 
 def compute_circuit_info(readings):
     vol = [readings[i][1] for i in range(len(readings))]
@@ -60,6 +114,8 @@ class Client(threading.Thread):
         self.clientSocket.connect((ip_addr, port_num))
 
     def run(self):
+        clf = joblib.load('mlp.joblib')
+
         ### Create serial port
         port = serial.Serial("/dev/ttyS0", baudrate=115200, timeout=3)
 
@@ -102,7 +158,7 @@ class Client(threading.Thread):
                     port.write(NACK)
 
             print('Predicting the action: ')
-            prediction = predict(sensor_readings)
+            prediction = predict(sensor_readings, clf)
             vol, cur, power, cumPow = compute_circuit_info(circuit_readings)
             raw_message = "#{0}|{1}|{2}|{3}|{4}".format(prediction, vol, cur, power, cumPow)
             print(raw_message)
@@ -125,3 +181,4 @@ print("Enter frame size: ")
 frame = input()
 my_client = Client(HOST, PORT)
 my_client.start()
+
