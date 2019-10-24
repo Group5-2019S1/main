@@ -13,51 +13,7 @@ from features import extraction
 import numpy as np
 
 def predict(readings, classifier):
-    features = []
-    data = np.array(readings)
-
-    temp_row = []
-    for j in range(0, 24):
-        temp = data[0:, j]
-        mean = np.mean(temp)
-        median = np.median(temp)
-        maximum = np.amax(temp)
-        minimum = np.amin(temp)
-        rms = np.sqrt(np.mean(temp ** 2))
-        std = np.std(temp)
-        q75, q25 = np.percentile(temp, [75, 25])
-        iqr = q75 - q25
-
-        if(j == 3 and iqr < -1.04)or(j == 4 and iqr < -1.16)or(j == 15 and iqr < -1.14)or(j == 16 and iqr < -0.89):
-            return 0, 0
-
-        temp_row.append(mean)
-        temp_row.append(median)
-        temp_row.append(maximum)
-        temp_row.append(std)
-        temp_row.append(iqr)
-        temp_row.append(minimum)
-        temp_row.append(rms)
-
-        #   Frequency Domain Feature - Power Spectral Density
-        fourier_temp = fft(temp)
-        # Freq domain features = Power spectral density, summation |ck|^2
-        fourier = np.abs(fourier_temp) ** 2
-        value = 0
-        for x in range(len(fourier)):
-            value = value + (fourier[x] * fourier[x])
-        value = value / len(fourier)
-        temp_row.append(value)
-    features.append(temp_row)
-    # print(features)
-    X = np.array(features)
-    scaler = joblib.load('scaler.pkl')
-    features = scaler.transform(features)
-    # print(features)
-    #return features
-
-    #features = extraction(readings)
-
+    features = extraction(readings)
     dancemove = classifier.predict(features)
     prediction, confidence = dancemove[0], np.amax(classifier.predict_proba(features))
     return prediction, confidence
@@ -108,8 +64,8 @@ class Client(threading.Thread):
     def __init__(self, ip_addr, port_num):
         threading.Thread.__init__(self)
         self.shutdown = threading.Event()
-        self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.clientSocket.connect((ip_addr, port_num))
+        #self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #self.clientSocket.connect((ip_addr, port_num))
 
     def run(self):
         classifier = joblib.load("mlp.pkl")
@@ -131,7 +87,7 @@ class Client(threading.Thread):
             port.write(b'2')
             handshake = 2
             print("Handshake completed!")
-        while not self.shutdown.is_set():
+        while (1): # not self.shutdown.is_set():
             sensor_readings = []
             circuit_readings = []
             count = 0
@@ -160,21 +116,21 @@ class Client(threading.Thread):
             prediction, confidence = predict(sensor_readings[100:150], classifier)
             print(prediction, confidence)
 
-            if (prediction == 0):
-                sensor_readings = []
+            #if (prediction == 0):
+             #   sensor_readings = []
 
-            elif (confidence > 0.95):
+            if (confidence > 0.95):
                 prediction = varname[prediction - 1]
                 vol, cur, power, cumPow = compute_circuit_info(circuit_readings)
                 raw_message = "#{0}|{1}|{2}|{3}|{4}".format(prediction, vol, cur, power, cumPow)
                 print(raw_message)
                 encodedmsg = encryptText(raw_message, secret_key)
-                self.clientSocket.sendall(encodedmsg)
+         #       self.clientSocket.sendall(encodedmsg)
 
             if prediction == 'logout':
                 print("Closing socket...")
-                self.clientSocket.close()
-                self.shutdown.set()
+          #      self.clientSocket.close()
+           #     self.shutdown.set()
 
 
 PORT = 6788
