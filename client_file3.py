@@ -11,6 +11,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from features import extraction
 import numpy as np
+from scipy.fftpack import fft
 
 def predict(readings, classifier):
     features = []
@@ -28,8 +29,8 @@ def predict(readings, classifier):
         q75, q25 = np.percentile(temp, [75, 25])
         iqr = q75 - q25
 
-        if(j == 3 and iqr < -1.04)or(j == 4 and iqr < -1.16)or(j == 15 and iqr < -1.14)or(j == 16 and iqr < -0.89):
-            return 0, 0
+       # if(j == 3 and iqr < -0.8)or(j == 4 and iqr < -0.9)or(j == 15 and iqr < -0.9)or(j == 16 and iqr < -0.6):
+        #    return 0, 0
 
         temp_row.append(mean)
         temp_row.append(median)
@@ -160,10 +161,11 @@ class Client(threading.Thread):
             prediction, confidence = predict(sensor_readings[100:150], classifier)
             print(prediction, confidence)
 
-            #if (prediction == 0):
-             #   sensor_readings = []
+            if (prediction == 0):
+                sensor_readings = []
+                print('0')
 
-            if (confidence > 0.95):
+            elif (confidence > 0.95):
                 prediction = varname[prediction - 1]
                 vol, cur, power, cumPow = compute_circuit_info(circuit_readings)
                 raw_message = "#{0}|{1}|{2}|{3}|{4}".format(prediction, vol, cur, power, cumPow)
