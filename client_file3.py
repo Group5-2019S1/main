@@ -109,8 +109,8 @@ class Client(threading.Thread):
     def __init__(self, ip_addr, port_num):
         threading.Thread.__init__(self)
         self.shutdown = threading.Event()
-        #self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #self.clientSocket.connect((ip_addr, port_num))
+        self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.clientSocket.connect((ip_addr, port_num))
 
     def run(self):
         classifier = joblib.load("mlp2.pkl")
@@ -132,7 +132,7 @@ class Client(threading.Thread):
             port.write(b'2')
             handshake = 2
             print("Handshake completed!")
-        while (1): # not self.shutdown.is_set():
+        while not self.shutdown.is_set():
             sensor_readings = []
             circuit_readings = []
             count = 0
@@ -169,12 +169,12 @@ class Client(threading.Thread):
                 raw_message = "#{0}|{1}|{2}|{3}|{4}".format(prediction, vol, cur, power, cumPow)
                 print(raw_message)
                 encodedmsg = encryptText(raw_message, secret_key)
-         #       self.clientSocket.sendall(encodedmsg)
+                self.clientSocket.sendall(encodedmsg)
 
             if prediction == 'logout':
                 print("Closing socket...")
-          #      self.clientSocket.close()
-           #     self.shutdown.set()
+                self.clientSocket.close()
+                self.shutdown.set()
 
 
 PORT = 6788
