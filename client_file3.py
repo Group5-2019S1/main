@@ -29,9 +29,6 @@ def predict(readings, classifier):
         q75, q25 = np.percentile(temp, [75, 25])
         iqr = q75 - q25
 
-       # if(j == 3 and iqr < -0.8)or(j == 4 and iqr < -0.9)or(j == 15 and iqr < -0.9)or(j == 16 and iqr < -0.6):
-        #    return 0, 0
-
         temp_row.append(mean)
         temp_row.append(median)
         temp_row.append(maximum)
@@ -50,7 +47,6 @@ def predict(readings, classifier):
         value = value / len(fourier)
         temp_row.append(value)
     features.append(temp_row)
-    # print(features)
     X = np.array(features)
     scaler = joblib.load('scaler.pkl')
     features = scaler.transform(features)
