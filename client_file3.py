@@ -113,7 +113,7 @@ class Client(threading.Thread):
         #self.clientSocket.connect((ip_addr, port_num))
 
     def run(self):
-        classifier = joblib.load("mlp.pkl")
+        classifier = joblib.load("mlp2.pkl")
 
         ### Create serial port
         port = serial.Serial("/dev/ttyS0", baudrate=115200, timeout=3)
@@ -163,8 +163,6 @@ class Client(threading.Thread):
 
             if (prediction == 0):
                 sensor_readings = []
-                print('0')
-
             elif (confidence > 0.95):
                 prediction = varname[prediction - 1]
                 vol, cur, power, cumPow = compute_circuit_info(circuit_readings)
