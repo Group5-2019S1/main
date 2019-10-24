@@ -13,7 +13,51 @@ from features import extraction
 import numpy as np
 
 def predict(readings, classifier):
-    features = extraction(readings)
+    features = []
+    data = np.array(readings)
+
+    temp_row = []
+    for j in range(0, 24):
+        temp = data[0:, j]
+        mean = np.mean(temp)
+        median = np.median(temp)
+        maximum = np.amax(temp)
+        minimum = np.amin(temp)
+        rms = np.sqrt(np.mean(temp ** 2))
+        std = np.std(temp)
+        q75, q25 = np.percentile(temp, [75, 25])
+        iqr = q75 - q25
+
+        if(j == 3 and iqr < -1.04)or(j == 4 and iqr < -1.16)or(j == 15 and iqr < -1.14)or(j == 16 and iqr < -0.89):
+            return 0, 0
+
+        temp_row.append(mean)
+        temp_row.append(median)
+        temp_row.append(maximum)
+        temp_row.append(std)
+        temp_row.append(iqr)
+        temp_row.append(minimum)
+        temp_row.append(rms)
+
+        #   Frequency Domain Feature - Power Spectral Density
+        fourier_temp = fft(temp)
+        # Freq domain features = Power spectral density, summation |ck|^2
+        fourier = np.abs(fourier_temp) ** 2
+        value = 0
+        for x in range(len(fourier)):
+            value = value + (fourier[x] * fourier[x])
+        value = value / len(fourier)
+        temp_row.append(value)
+    features.append(temp_row)
+    # print(features)
+    X = np.array(features)
+    scaler = joblib.load('scaler.pkl')
+    features = scaler.transform(features)
+    # print(features)
+    #return features
+
+    #features = extraction(readings)
+
     dancemove = classifier.predict(features)
     prediction, confidence = dancemove[0], np.amax(classifier.predict_proba(features))
     return prediction, confidence
