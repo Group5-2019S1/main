@@ -174,7 +174,7 @@ class Client(threading.Thread):
 
 
 PORT = 6788
-HOST = "192.168.43.36"
+HOST = "192.168.43.51"
 secret_key = 'secretkeysixteen'
 ACK = b'A'
 NACK = b'N'
