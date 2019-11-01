@@ -11,7 +11,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from features import extraction
 import numpy as np
-from scipy.fftpack import fft
 
 def predict(readings, classifier):
     features = []
@@ -28,6 +27,9 @@ def predict(readings, classifier):
         std = np.std(temp)
         q75, q25 = np.percentile(temp, [75, 25])
         iqr = q75 - q25
+
+        if(j == 3 and iqr < -1.04)or(j == 4 and iqr < -1.16)or(j == 15 and iqr < -1.14)or(j == 16 and iqr < -0.89):
+            return 0, 0
 
         temp_row.append(mean)
         temp_row.append(median)
@@ -47,6 +49,7 @@ def predict(readings, classifier):
         value = value / len(fourier)
         temp_row.append(value)
     features.append(temp_row)
+    # print(features)
     X = np.array(features)
     scaler = joblib.load('scaler.pkl')
     features = scaler.transform(features)
@@ -109,7 +112,7 @@ class Client(threading.Thread):
         self.clientSocket.connect((ip_addr, port_num))
 
     def run(self):
-        classifier = joblib.load("mlp2.pkl")
+        classifier = joblib.load("mlp.pkl")
 
         ### Create serial port
         port = serial.Serial("/dev/ttyS0", baudrate=115200, timeout=3)
@@ -153,12 +156,13 @@ class Client(threading.Thread):
                     port.write(NACK)
 
             print('Predicting the action: ')
-            varname =["handmotor", "bunny", "tapshoulders", "rocket", "cowboy"]
+            varname =["handmotor", "bunny", "tapshoulders", "rocket", "cowboy", "hunchback", "jamesbond", "chicken", "movingsalute", "whip", "logout"]
             prediction, confidence = predict(sensor_readings[100:150], classifier)
             print(prediction, confidence)
 
             if (prediction == 0):
                 sensor_readings = []
+
             elif (confidence > 0.95):
                 prediction = varname[prediction - 1]
                 vol, cur, power, cumPow = compute_circuit_info(circuit_readings)
@@ -174,7 +178,7 @@ class Client(threading.Thread):
 
 
 PORT = 6788
-HOST = "192.168.43.51"
+HOST = "192.168.43.36"
 secret_key = 'secretkeysixteen'
 ACK = b'A'
 NACK = b'N'
