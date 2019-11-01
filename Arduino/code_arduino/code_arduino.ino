@@ -281,8 +281,8 @@ void readPowerData(Data_float powerBuffer[]){
   voltageValue = analogRead(VOLTAGE_PIN);   // set at A5
   
   // Remap the ADC value into a voltage number (5V reference)
-  sensorValue = (sensorValue * VOLTAGE_REF) / 1023;
-  voltageValue = voltageValue / 1023 * 2;
+  sensorValue = (sensorValue * VOLTAGE_REF) / 1023.0;
+  voltageValue = voltageValue / 1023.0 * 2 * 5;
 
   // Follow the equation given by the INA169 datasheet to
   // determine the current flowing through RS. Assume RL = 10k
@@ -294,17 +294,20 @@ void readPowerData(Data_float powerBuffer[]){
   power = voltageValue * current;
 
   //calculate energy
-  currTime = millis();
-  timeVal = (currTime - prevTime) / 3600000;
-  energyVal = power * timeVal;
+  currTime = micros();
+  timeVal = currTime - prevTime;
+  energyVal = energyVal +  (power * timeVal);
+  //Serial.println("Reading PoweR");
+  //Serial.println( timeVal > 0.0);
+  //Serial.println(energyVal / 3600000000.0);
+  
   prevTime = currTime;
-  Serial.println("Reading PoweR");
   
   // Storing the values into powerBuffer
   powerBuffer[0].f = current;
   powerBuffer[1].f = voltageValue;
   powerBuffer[2].f = power;
-  powerBuffer[3].f = energyVal;
+  powerBuffer[3].f = energyVal / 3600000000.0;
  
 }
 
