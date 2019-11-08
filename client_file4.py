@@ -111,7 +111,7 @@ class Client(threading.Thread):
 
     def run(self):
         last_prediction = 0
-        count = 0
+        logoutcount = 0
         classifier = joblib.load("mlp10moves3.pkl")
 
         ### Create serial port
@@ -161,9 +161,9 @@ class Client(threading.Thread):
             print(prediction, confidence)
 
             if(prediction==11 and confidence>0.95):
-                if (count < 2):
+                if (logoutcount < 2):
                     prediction = 0
-                    count = count + 1
+                    logoutcount = logoutcount + 1
 
             if (prediction == 0):
                 sensor_readings = []
@@ -175,7 +175,7 @@ class Client(threading.Thread):
                 raw_message = "#{0}|{1}|{2}|{3}|{4}".format(prediction, vol, cur, power, cumPow)
                 print(raw_message)
                 encodedmsg = encryptText(raw_message, secret_key)
-                count = 0
+                logoutcount = 0
                 self.clientSocket.sendall(encodedmsg)
 
             elif(confidence > 0.50 and prediction!=11):
@@ -186,7 +186,7 @@ class Client(threading.Thread):
                     raw_message = "#{0}|{1}|{2}|{3}|{4}".format(prediction, vol, cur, power, cumPow)
                     print(raw_message)
                     encodedmsg = encryptText(raw_message, secret_key)
-                    count = 0
+                    logoutcount = 0
                     self.clientSocket.sendall(encodedmsg)
                 else:
                     last_prediction = prediction
