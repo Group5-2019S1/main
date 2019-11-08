@@ -111,7 +111,7 @@ class Client(threading.Thread):
 
     def run(self):
         last_prediction = 0
-        classifier = joblib.load("mlp10moves2.pkl")
+        classifier = joblib.load("mlp10moves3.pkl")
 
         ### Create serial port
         port = serial.Serial("/dev/ttyS0", baudrate=115200, timeout=3)
@@ -159,6 +159,11 @@ class Client(threading.Thread):
             prediction, confidence = predict(sensor_readings[100:150], classifier)
             print(prediction, confidence)
 
+            if(prediction==11 and confidence>0.95):
+                if (count < 2):
+                    prediction = 0
+                    count = count + 1
+
             if (prediction == 0):
                 sensor_readings = []
 
@@ -169,8 +174,10 @@ class Client(threading.Thread):
                 raw_message = "#{0}|{1}|{2}|{3}|{4}".format(prediction, vol, cur, power, cumPow)
                 print(raw_message)
                 encodedmsg = encryptText(raw_message, secret_key)
+                count = 0
                 self.clientSocket.sendall(encodedmsg)
-            elif(confidence > 0.50):
+
+            elif(confidence > 0.50 and prediction!=11):
                 if (prediction == last_prediction):
                     prediction = varname[prediction - 1]
                     last_prediction = 0
@@ -178,9 +185,12 @@ class Client(threading.Thread):
                     raw_message = "#{0}|{1}|{2}|{3}|{4}".format(prediction, vol, cur, power, cumPow)
                     print(raw_message)
                     encodedmsg = encryptText(raw_message, secret_key)
+                    count = 0
                     self.clientSocket.sendall(encodedmsg)
                 else:
                     last_prediction = prediction
+            else:
+                last_prediction = 0
 
             if prediction == 'logout':
                 print("Closing socket...")
