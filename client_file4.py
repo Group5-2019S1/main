@@ -110,6 +110,7 @@ class Client(threading.Thread):
         self.clientSocket.connect((ip_addr, port_num))
 
     def run(self):
+        last_prediction = 0
         classifier = joblib.load("mlp10moves2.pkl")
 
         ### Create serial port
