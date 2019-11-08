@@ -111,6 +111,7 @@ class Client(threading.Thread):
 
     def run(self):
         last_prediction = 0
+        count = 0
         classifier = joblib.load("mlp10moves3.pkl")
 
         ### Create serial port
