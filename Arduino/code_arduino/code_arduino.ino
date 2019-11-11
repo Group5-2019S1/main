@@ -322,6 +322,7 @@ void readSensorData(Data_int dataBuffer[]){
   
 }
 
+// Function to concatenate sensor data, power data and checksum into msgbuffer
 void convertData(Data_int dataBuffer[], Data_float powerBuffer[]){
 
   uint8_t checksum = 0;
@@ -358,13 +359,14 @@ void mainTask(void *p) {
 //  xLastWakeTime = xTaskGetTickCount();
   
   Serial.println("Data sending phase initiated");
-  
+
+  // Variables for resending in case of incorrect checksum
   int flag = 0;
   int ACK;
   int count = 3;
   
   while(1){
-    // Flag to check if NACK received
+    // reset flag
     flag = 0;
     
     blinkLed();
@@ -372,7 +374,7 @@ void mainTask(void *p) {
     /* 
      An int is 2 bytes in union data structutre
      sensor data -> 4 x ( gyro(x,y,z) + acc(x,y,z) ) == 24
-     Power data -> Current, Voltage, Power, Energy (All in float)(4 bytes each)
+     Power data -> Current, Voltage, Power, Energy (All in float)
     */
     Data_int dataBuffer[24];
     readSensorData(dataBuffer);
@@ -382,6 +384,7 @@ void mainTask(void *p) {
     
     convertData(dataBuffer, powerBuffer);
 
+    // To notify RPi the start of a message buffer
     Serial2.write("#");
     
     for (int j=0; j < 65; j++) {
@@ -389,7 +392,6 @@ void mainTask(void *p) {
       //Serial.print(msgBuffer[j]);
     }
     
-    //Serial2.write('\n');
     Serial.println();
     
     while( flag == 0 ){  
