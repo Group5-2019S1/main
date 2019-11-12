@@ -323,6 +323,7 @@ void readSensorData(Data_int dataBuffer[]){
 }
 
 // Function to concatenate sensor data, power data and checksum into msgbuffer
+// Each byte from the union data structures are mapped into msgBuffer
 void convertData(Data_int dataBuffer[], Data_float powerBuffer[]){
 
   uint8_t checksum = 0;
@@ -332,11 +333,13 @@ void convertData(Data_int dataBuffer[], Data_float powerBuffer[]){
   // empty msgBuffer
   // memset(msgBuffer, '', 66);
 
+  // An int is 2 bytes in union data structutre
   for(int i=0; i<48; i+=2){
     msgBuffer[i] = dataBuffer[i/2].str[1];
     msgBuffer[i+1] = dataBuffer[i/2].str[0];
   }
 
+  // A float is 4 bytes in union data structure
   int x = 0;
   for(int k=48; k<64; k+=4){
     msgBuffer[k]= powerBuffer[x].str[3];
@@ -372,12 +375,16 @@ void mainTask(void *p) {
     blinkLed();
     
     /* 
-     An int is 2 bytes in union data structutre
      sensor data -> 4 x ( gyro(x,y,z) + acc(x,y,z) ) == 24
-     Power data -> Current, Voltage, Power, Energy (All in float)
+     Each sensor data uses Data_int union structure
     */
     Data_int dataBuffer[24];
     readSensorData(dataBuffer);
+
+    /*
+     Power data -> Current, Voltage, Power, Energy (All in float) == 4
+     Each power data uses Data_float union structure
+    */
     
     Data_float powerBuffer[4];
     readPowerData(powerBuffer);
@@ -386,7 +393,14 @@ void mainTask(void *p) {
 
     // To notify RPi the start of a message buffer
     Serial2.write("#");
-    
+
+    /*
+     msgBuffer = [sensor Data] + [power Data] + checksum
+     Each int of Data_int is 2 bytes in string array
+     Each float of Data_float is 4 bytes in string array
+     sensor Data = 24 * 2 = 48 bytes, power Data = 4 * 4 = 16 bytes, checksum = 1 byte
+     Total bytes = 65 bytes (excluding "#" start byte)
+    */
     for (int j=0; j < 65; j++) {
       Serial2.write(msgBuffer[j]);
       //Serial.print(msgBuffer[j]);
