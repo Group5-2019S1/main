@@ -105,7 +105,7 @@ while True:
         if time.time() > timer60:
             print('STOP')
             break
-        print("Receiving data...")
+        #print("Receiving data...")
         bytedata=port.read(66)
         bytedata = bytedata[bytedata.find(b'#')+1:]
         #print(bytedata)

@@ -11,9 +11,51 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from features import extraction
 import numpy as np
+from scipy.fftpack import fft
 
 def predict(readings, classifier):
-    features = extraction(readings)
+    features = []
+    data = np.array(readings)
+
+    temp_row = []
+    for j in range(0, 24):
+        temp = data[0:, j]
+        mean = np.mean(temp)
+        median = np.median(temp)
+        maximum = np.amax(temp)
+        minimum = np.amin(temp)
+        rms = np.sqrt(np.mean(temp ** 2))
+        std = np.std(temp)
+        q75, q25 = np.percentile(temp, [75, 25])
+        iqr = q75 - q25
+
+        temp_row.append(mean)
+        temp_row.append(median)
+        temp_row.append(maximum)
+        temp_row.append(std)
+        temp_row.append(iqr)
+        temp_row.append(minimum)
+        temp_row.append(rms)
+
+        #   Frequency Domain Feature - Power Spectral Density
+        fourier_temp = fft(temp)
+        # Freq domain features = Power spectral density, summation |ck|^2
+        fourier = np.abs(fourier_temp) ** 2
+        value = 0
+        for x in range(len(fourier)):
+            value = value + (fourier[x] * fourier[x])
+        value = value / len(fourier)
+        temp_row.append(value)
+    features.append(temp_row)
+    # print(features)
+    X = np.array(features)
+    scaler = joblib.load('scaler.pkl')
+    features = scaler.transform(features)
+    # print(features)
+    #return features
+
+    #features = extraction(readings)
+
     dancemove = classifier.predict(features)
     prediction, confidence = dancemove[0], np.amax(classifier.predict_proba(features))
     return prediction, confidence
@@ -68,7 +110,9 @@ class Client(threading.Thread):
         self.clientSocket.connect((ip_addr, port_num))
 
     def run(self):
-        classifier = joblib.load("mlp.pkl")
+        last_prediction = 0
+        logoutcount = 0
+        classifier = joblib.load("mlpbig.pkl")
 
         ### Create serial port
         port = serial.Serial("/dev/ttyS0", baudrate=115200, timeout=3)
@@ -112,20 +156,42 @@ class Client(threading.Thread):
                     port.write(NACK)
 
             print('Predicting the action: ')
-            varname =["handmotor", "bunny", "tapshoulders", "rocket", "cowboy"]
+            varname =["handmotor", "bunny", "tapshoulders", "rocket", "cowboy", "hunchback", "jamesbond", "chicken", "movingsalute", "whip", "logout"]
             prediction, confidence = predict(sensor_readings[100:150], classifier)
             print(prediction, confidence)
 
-            if (prediction == 0)
-                sensor_readings = [];
+            if(prediction==11 and confidence>0.95):
+                if (logoutcount < 2):
+                    prediction = 0
+                    logoutcount = logoutcount + 1
+
+            if (prediction == 0):
+                sensor_readings = []
 
             elif (confidence > 0.95):
                 prediction = varname[prediction - 1]
+                last_prediction = 0
                 vol, cur, power, cumPow = compute_circuit_info(circuit_readings)
                 raw_message = "#{0}|{1}|{2}|{3}|{4}".format(prediction, vol, cur, power, cumPow)
                 print(raw_message)
                 encodedmsg = encryptText(raw_message, secret_key)
+                logoutcount = 0
                 self.clientSocket.sendall(encodedmsg)
+
+            elif(confidence > 0.50 and prediction!=11):
+                if (prediction == last_prediction):
+                    prediction = varname[prediction - 1]
+                    last_prediction = 0
+                    vol, cur, power, cumPow = compute_circuit_info(circuit_readings)
+                    raw_message = "#{0}|{1}|{2}|{3}|{4}".format(prediction, vol, cur, power, cumPow)
+                    print(raw_message)
+                    encodedmsg = encryptText(raw_message, secret_key)
+                    logoutcount = 0
+                    self.clientSocket.sendall(encodedmsg)
+                else:
+                    last_prediction = prediction
+            else:
+                last_prediction = 0
 
             if prediction == 'logout':
                 print("Closing socket...")
