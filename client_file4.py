@@ -112,7 +112,7 @@ class Client(threading.Thread):
     def run(self):
         last_prediction = 0
         logoutcount = 0
-        classifier = joblib.load("mlpbig.pkl")
+        classifier = joblib.load("mlpbig3.pkl")
 
         ### Create serial port
         port = serial.Serial("/dev/ttyS0", baudrate=115200, timeout=3)
