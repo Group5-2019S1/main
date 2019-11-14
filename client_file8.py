@@ -49,7 +49,7 @@ def predict(readings, classifier):
     features.append(temp_row)
     # print(features)
     X = np.array(features)
-    scaler = joblib.load('scaler.pkl')
+    scaler = joblib.load('scaler3.pkl')
     features = scaler.transform(features)
     # print(features)
     #return features
@@ -106,8 +106,8 @@ class Client(threading.Thread):
     def __init__(self, ip_addr, port_num):
         threading.Thread.__init__(self)
         self.shutdown = threading.Event()
-        self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.clientSocket.connect((ip_addr, port_num))
+        # self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # self.clientSocket.connect((ip_addr, port_num))
 
     def run(self):
         last_prediction = 0
@@ -131,7 +131,7 @@ class Client(threading.Thread):
             port.write(b'2')
             handshake = 2
             print("Handshake completed!")
-        while not self.shutdown.is_set():
+        while (1): # not self.shutdown.is_set():
             sensor_readings = []
             circuit_readings = []
             count = 0
@@ -160,25 +160,10 @@ class Client(threading.Thread):
             prediction, confidence = predict(sensor_readings[100:150], classifier)
             print(prediction, confidence)
 
-            if(prediction==11 and confidence>0.95):
-                if (logoutcount < 2):
-                    prediction = 0
-                    logoutcount = logoutcount + 1
-
             if (prediction == 0):
                 sensor_readings = []
 
-            elif (confidence > 0.95):
-                prediction = varname[prediction - 1]
-                last_prediction = 0
-                vol, cur, power, cumPow = compute_circuit_info(circuit_readings)
-                raw_message = "#{0}|{1}|{2}|{3}|{4}".format(prediction, vol, cur, power, cumPow)
-                print(raw_message)
-                encodedmsg = encryptText(raw_message, secret_key)
-                logoutcount = 0
-                self.clientSocket.sendall(encodedmsg)
-
-            elif(confidence > 0.50 and prediction!=11):
+            elif(confidence > 0.95):
                 if (prediction == last_prediction):
                     prediction = varname[prediction - 1]
                     last_prediction = 0
@@ -187,24 +172,22 @@ class Client(threading.Thread):
                     print(raw_message)
                     encodedmsg = encryptText(raw_message, secret_key)
                     logoutcount = 0
-                    self.clientSocket.sendall(encodedmsg)
+                    # self.clientSocket.sendall(encodedmsg)
                 else:
                     last_prediction = prediction
-            else:
-                last_prediction = 0
 
             if prediction == 'logout':
                 print("Closing socket...")
-                self.clientSocket.close()
-                self.shutdown.set()
+                # self.clientSocket.close()
+                # self.shutdown.set()
 
 
 PORT = 6788
-HOST = "192.168.43.211"
+HOST = "192.168.43.36"
 secret_key = 'secretkeysixteen'
 ACK = b'A'
 NACK = b'N'
 
-frame = 150
+frame = 200
 my_client = Client(HOST, PORT)
 my_client.start()

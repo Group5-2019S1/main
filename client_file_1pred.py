@@ -49,7 +49,7 @@ def predict(readings, classifier):
     features.append(temp_row)
     # print(features)
     X = np.array(features)
-    scaler = joblib.load('scaler.pkl')
+    scaler = joblib.load('scaler4.pkl')
     features = scaler.transform(features)
     # print(features)
     #return features
@@ -112,7 +112,7 @@ class Client(threading.Thread):
     def run(self):
         last_prediction = 0
         logoutcount = 0
-        classifier = joblib.load("mlpbig3.pkl")
+        classifier = joblib.load("mlpbig4.pkl")
 
         ### Create serial port
         port = serial.Serial("/dev/ttyS0", baudrate=115200, timeout=3)
@@ -160,26 +160,11 @@ class Client(threading.Thread):
             prediction, confidence = predict(sensor_readings[100:150], classifier)
             print(prediction, confidence)
 
-            if(prediction==11 and confidence>0.95):
-                if (logoutcount < 2):
-                    prediction = 0
-                    logoutcount = logoutcount + 1
-
             if (prediction == 0):
                 sensor_readings = []
 
-            elif (confidence > 0.95):
-                prediction = varname[prediction - 1]
-                last_prediction = 0
-                vol, cur, power, cumPow = compute_circuit_info(circuit_readings)
-                raw_message = "#{0}|{1}|{2}|{3}|{4}".format(prediction, vol, cur, power, cumPow)
-                print(raw_message)
-                encodedmsg = encryptText(raw_message, secret_key)
-                logoutcount = 0
-                self.clientSocket.sendall(encodedmsg)
-
-            elif(confidence > 0.50 and prediction!=11):
-                if (prediction == last_prediction):
+            elif(confidence > 0.95):
+                if (1):
                     prediction = varname[prediction - 1]
                     last_prediction = 0
                     vol, cur, power, cumPow = compute_circuit_info(circuit_readings)
@@ -190,8 +175,6 @@ class Client(threading.Thread):
                     self.clientSocket.sendall(encodedmsg)
                 else:
                     last_prediction = prediction
-            else:
-                last_prediction = 0
 
             if prediction == 'logout':
                 print("Closing socket...")
